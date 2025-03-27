@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poyga O'yini</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <h1>Poyga O'yini</h1>
+        <div id="score">
+            <span>Vaqt: <span id="time">0</span> sekund</span>
+        </div>
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <button id="new-game-btn" onclick="startNewGame()">Yangi O'yin</button>
+    </div>
+
+    <div id="car-selection" style="display:none;">
+        <h2>Mashina Tanlang</h2>
+        <button onclick="chooseCar('blue')">Ko'k Mashina</button>
+        <button onclick="chooseCar('red')">Qizil Mashina</button>
+        <button onclick="chooseCar('green')">Yashil Mashina</button>
+    </div>
+
+  
+
+    <script src="main.js"></script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aetherium 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; text-align: center; }
+        #restartButton, #winMessage { 
+            display: none;
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            padding: 10px 20px; 
+            font-size: 20px; 
+            background-color: red; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+        }
+    </style>
+</head>
+<body>
+    <button id="restartButton" onclick="restartGame()">Yangi o'yin boshlash</button>
+    <div id="winMessage" style="display:none; font-size: 30px; color: white;">Siz yutdingiz!</div>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        const groundGeometry = new THREE.PlaneGeometry(100, 100);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+        
+        function createMountain(x, z, size) {
+            const mountainGeometry = new THREE.ConeGeometry(size, size * 2, 6);
+            const mountainMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+            const mountain = new THREE.Mesh(mountainGeometry, mountainMaterial);
+            mountain.position.set(x, size, z);
+            scene.add(mountain);
+        }
+        createMountain(10, 10, 5);
+        createMountain(-10, -10, 7);
+        createMountain(15, -5, 6);
+        createMountain(-15, 5, 8);
+        
+        let player;
+        function createPlayer() {
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.y = 1;
+            scene.add(player);
+        }
+        createPlayer();
+        
+        let enemies = [];
+        function createEnemy(x, z) {
+            const enemyGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            enemy.position.set(x, 1, z);
+            scene.add(enemy);
+            enemies.push({ mesh: enemy, bullets: [] });
+        }
+        function spawnEnemies() {
+            enemies = [];
+            createEnemy(5, -5);
+            createEnemy(-5, 5);
+            createEnemy(8, -8);
+            createEnemy(-8, 8);
+        }
+        spawnEnemies();
+        
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 5);
+        scene.add(light);
+        
+        camera.position.set(0, 5, 10);
+        camera.lookAt(player.position);
+        
+        const keys = {};
+        window.addEventListener("keydown", (e) => keys[e.key] = true);
+        window.addEventListener("keyup", (e) => keys[e.key] = false);
+        
+        let bullets = [];
+        function shootBullet() {
+            const bulletGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+            const bulletMaterial = new THREE.MeshStandardMaterial({ color: 0xffff00 });
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            bullet.position.set(player.position.x, 1, player.position.z);
+            scene.add(bullet);
+            bullets.push({ mesh: bullet, direction: { x: 0, z: -1 } });
+        }
+        window.addEventListener("click", shootBullet);
+        
+        function enemyShoot(enemy) {
+            const bulletGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+            const bulletMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            bullet.position.set(enemy.mesh.position.x, 1, enemy.mesh.position.z);
+            scene.add(bullet);
+            enemy.bullets.push({ mesh: bullet, direction: { x: (player.position.x - enemy.mesh.position.x) * 0.02, z: (player.position.z - enemy.mesh.position.z) * 0.02 } });
+        }
+        
+        function update() {
+            if (keys["ArrowUp"] || keys["w"]) player.position.z -= 0.1;
+            if (keys["ArrowDown"] || keys["s"]) player.position.z += 0.1;
+            if (keys["ArrowLeft"] || keys["a"]) player.position.x -= 0.1;
+            if (keys["ArrowRight"] || keys["d"]) player.position.x += 0.1;
+            
+            bullets.forEach((bullet, index) => {
+                bullet.mesh.position.x += bullet.direction.x * 0.5;
+                bullet.mesh.position.z += bullet.direction.z * 0.5;
+                
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (bullet.mesh.position.distanceTo(enemy.mesh.position) < 1) {
+                        scene.remove(enemy.mesh);
+                        enemies.splice(enemyIndex, 1);
+                        scene.remove(bullet.mesh);
+                        bullets.splice(index, 1);
+                    }
+                });
+            });
+            
+            enemies.forEach(enemy => {
+                enemyShoot(enemy);
+                enemy.bullets.forEach(bullet => {
+                    bullet.mesh.position.x += bullet.direction.x;
+                    bullet.mesh.position.z += bullet.direction.z;
+                    if (bullet.mesh.position.distanceTo(player.position) < 1) {
+                        playerDies();
+                    }
+                });
+            });
+
+            if (enemies.length === 0) {
+                document.getElementById("winMessage").style.display = "block";
+            }
+        }
+        
+        function restartGame() {
+            location.reload();
+        }
+        
+        function playerDies() {
+            document.getElementById("restartButton").style.display = "block";
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
