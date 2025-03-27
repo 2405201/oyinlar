@@ -3,29 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poyga O'yini</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Square Escape</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+            background: white;
+        }
+    </style>
 </head>
 <body>
-    <div id="game-container">
-        <h1>Poyga O'yini</h1>
-        <div id="score">
-            <span>Vaqt: <span id="time">0</span> sekund</span>
-        </div>
-        <canvas id="game-canvas" width="800" height="600"></canvas>
-        <button id="new-game-btn" onclick="startNewGame()">Yangi O'yin</button>
-    </div>
-
-    <div id="car-selection" style="display:none;">
-        <h2>Mashina Tanlang</h2>
-        <button onclick="chooseCar('blue')">Ko'k Mashina</button>
-        <button onclick="chooseCar('red')">Qizil Mashina</button>
-        <button onclick="chooseCar('green')">Yashil Mashina</button>
-    </div>
-
-  
-
-    <script src="main.js"></script>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        let player = { x: 50, y: 50, size: 20, speed: 5 };
+        let enemies = [];
+        let keys = {};
+        let score = 0;
+        
+        window.addEventListener("keydown", (e) => keys[e.key] = true);
+        window.addEventListener("keyup", (e) => keys[e.key] = false);
+        
+        function update() {
+            if (keys["ArrowUp"] && player.y > 0) player.y -= player.speed;
+            if (keys["ArrowDown"] && player.y < canvas.height - player.size) player.y += player.speed;
+            if (keys["ArrowLeft"] && player.x > 0) player.x -= player.speed;
+            if (keys["ArrowRight"] && player.x < canvas.width - player.size) player.x += player.speed;
+            
+            if (Math.random() < 0.02) {
+                enemies.push({ x: Math.random() * canvas.width, y: 0, size: 15, speed: Math.random() * 4 + 1 });
+            }
+            
+            for (let enemy of enemies) {
+                enemy.y += enemy.speed;
+                if (enemy.y > canvas.height) {
+                    enemies.splice(enemies.indexOf(enemy), 1);
+                    score++;
+                }
+                if (player.x < enemy.x + enemy.size && player.x + player.size > enemy.x &&
+                    player.y < enemy.y + enemy.size && player.y + player.size > enemy.y) {
+                    alert("Game Over! Score: " + score);
+                    document.location.reload();
+                }
+            }
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "blue";
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+            
+            ctx.fillStyle = "red";
+            for (let enemy of enemies) {
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+            }
+            
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 20, 30);
+        }
+        
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        gameLoop();
+    </script>
 </body>
 </html>
 
