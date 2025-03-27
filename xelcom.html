@@ -1,101 +1,132 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nishon O'yini</title>
+    <title>Shooter Game</title>
     <style>
-        body { margin: 0; overflow: hidden; text-align: center; background-color: black; }
-        canvas { display: block; }
-        #score { position: absolute; top: 10px; left: 10px; font-size: 20px; color: white; }
-        #message { position: absolute; top: 50px; left: 10px; font-size: 24px; color: white; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+            background: white;
+        }
     </style>
 </head>
 <body>
-    <div id="score">Ball: 0</div>
-    <div id="message"></div>
-    <script type="module">
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.module.js';
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 800;
+        canvas.height = 600;
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
+        let player = { x: 50, y: 275, width: 40, height: 40, speed: 5, color: "blue" };
+        let bullets = [];
+        let enemies = [];
+        let enemyBullets = [];
+        let keys = {};
         let score = 0;
-        const scoreElement = document.getElementById('score');
-        const messageElement = document.getElementById('message');
 
-        const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const player = new THREE.Mesh(playerGeometry, playerMaterial);
-        player.position.set(0, -3, 0);
-        scene.add(player);
-
-        const targetGeometry = new THREE.RingGeometry(0.5, 1, 32);
-        const targetMaterial = new THREE.MeshBasicMaterial({ color: 0xffd700, side: THREE.DoubleSide });
-        const target = new THREE.Mesh(targetGeometry, targetMaterial);
-        target.position.set(0, 3, -5);
-        scene.add(target);
-
-        let targetDirection = 1;
-        const bullets = [];
-
-        window.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                const bulletGeometry = new THREE.SphereGeometry(0.2, 8, 8);
-                const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-                const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
-                bullet.position.copy(player.position);
-                bullet.velocity = new THREE.Vector3(0, 0.3, -0.5);
-                bullets.push(bullet);
-                scene.add(bullet);
-            }
-        });
-
-        function checkCollision(bullet, target) {
-            const distance = bullet.position.distanceTo(target.position);
-            if (distance < 0.5) return 100;
-            if (distance < 1.2) return 50;
-            return 10;
+        function spawnEnemy() {
+            enemies.push({ x: canvas.width, y: Math.random() * canvas.height, width: 40, height: 40, speed: 3, color: "red" });
         }
+        setInterval(spawnEnemy, 2000);
 
-        function animate() {
-            requestAnimationFrame(animate);
+        function enemyShoot() {
+            enemies.forEach(enemy => {
+                enemyBullets.push({ x: enemy.x, y: enemy.y + enemy.height / 2 - 5, width: 10, height: 5, speed: -5, color: "purple" });
+            });
+        }
+        setInterval(enemyShoot, 1500);
 
-            target.position.x += targetDirection * 0.05;
-            if (target.position.x > 3 || target.position.x < -3) {
-                targetDirection *= -1;
-            }
+        window.addEventListener("keydown", (e) => keys[e.key] = true);
+        window.addEventListener("keyup", (e) => keys[e.key] = false);
 
-            bullets.forEach((bullet, index) => {
-                bullet.position.add(bullet.velocity);
-                if (bullet.position.z < -5) {
-                    const points = checkCollision(bullet, target);
-                    score += points;
-                    scoreElement.textContent = `Ball: ${score}`;
+        function update() {
+            if (keys["ArrowUp"] && player.y > 0) player.y -= player.speed;
+            if (keys["ArrowDown"] && player.y < canvas.height - player.height) player.y += player.speed;
+            if (keys[" "]) bullets.push({ x: player.x + player.width, y: player.y + player.height / 2 - 5, width: 10, height: 5, speed: 7, color: "black" });
 
-                    if (score >= 100) {
-                        messageElement.textContent = "Siz o'yin g'olibi bo'ldingiz!";
-                    } else if (points === 100) {
-                        messageElement.textContent = "100 ball oldingiz!";
-                    } else if (points === 50) {
-                        messageElement.textContent = "50 ball oldingiz!";
-                    } else {
-                        messageElement.textContent = "Yutqazdingiz!";
+            bullets.forEach((bullet, bIndex) => {
+                bullet.x += bullet.speed;
+                if (bullet.x > canvas.width) bullets.splice(bIndex, 1);
+            });
+
+            enemies.forEach((enemy, eIndex) => {
+                enemy.x -= enemy.speed;
+                if (enemy.x + enemy.width < 0) enemies.splice(eIndex, 1);
+
+                bullets.forEach((bullet, bIndex) => {
+                    if (
+                        bullet.x < enemy.x + enemy.width &&
+                        bullet.x + bullet.width > enemy.x &&
+                        bullet.y < enemy.y + enemy.height &&
+                        bullet.y + bullet.height > enemy.y
+                    ) {
+                        enemies.splice(eIndex, 1);
+                        bullets.splice(bIndex, 1);
+                        score++;
                     }
+                });
+            });
 
-                    scene.remove(bullet);
-                    bullets.splice(index, 1);
+            enemyBullets.forEach((bullet, index) => {
+                bullet.x += bullet.speed;
+                if (bullet.x + bullet.width < 0) enemyBullets.splice(index, 1);
+                if (
+                    bullet.x < player.x + player.width &&
+                    bullet.x + bullet.width > player.x &&
+                    bullet.y < player.y + player.height &&
+                    bullet.y + bullet.height > player.y
+                ) {
+                    alert("Siz yutqazdingiz!");
+                    document.location.reload();
                 }
             });
 
-            renderer.render(scene, camera);
+            if (score >= 100) {
+                alert("Siz yutdingiz!");
+                document.location.reload();
+            }
         }
 
-        camera.position.z = 5;
-        animate();
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            bullets.forEach(bullet => {
+                ctx.fillStyle = bullet.color;
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+            
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+
+            enemyBullets.forEach(bullet => {
+                ctx.fillStyle = bullet.color;
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+            
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 30);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
     </script>
 </body>
 </html>
