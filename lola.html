@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race Game</title>
+    <style>
+        body {
+            text-align: center;
+            background-color: #333;
+            color: white;
+        }
+        canvas {
+            background: #444;
+            display: block;
+            margin: auto;
+        }
+        #gameOverScreen {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Race o'yini</h1>
+    <p>O'tgan mashinalar: <span id="score">0</span></p>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    
+    <div id="gameOverScreen">
+        <h2 id="gameOverText"></h2>
+        <button onclick="restartGame()">Yangi o‘yinni boshlash</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("score");
+        const gameOverScreen = document.getElementById("gameOverScreen");
+        const gameOverText = document.getElementById("gameOverText");
+        
+        let car = { x: 175, y: 500, width: 50, height: 80 };
+        let obstacles = [];
+        let speed = 5;
+        let gameOver = false;
+        let score = 0;
+        
+        function drawCar(x, y, width, height, color = "red") {
+            ctx.fillStyle = color;
+            ctx.fillRect(x + 10, y, width - 20, height); // Tana
+            ctx.fillStyle = "black";
+            ctx.fillRect(x, y + 10, 10, 20);
+            ctx.fillRect(x + width - 10, y + 10, 10, 20);
+            ctx.fillRect(x, y + height - 30, 10, 20);
+            ctx.fillRect(x + width - 10, y + height - 30, 10, 20);
+        }
+        
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "ArrowLeft" && car.x > 0) {
+                car.x -= 20;
+            } else if (event.key === "ArrowRight" && car.x < canvas.width - car.width) {
+                car.x += 20;
+            }
+        });
+        
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                drawCar(obs.x, obs.y, obs.width, obs.height, "blue");
+            });
+        }
+        
+        function updateObstacles() {
+            obstacles.forEach((obs, index) => {
+                obs.y += speed;
+                if (obs.y > canvas.height) {
+                    obs.y = -80;
+                    obs.x = Math.random() * (canvas.width - obs.width);
+                    score++;
+                    scoreDisplay.textContent = score;
+                }
+                if (
+                    car.x < obs.x + obs.width &&
+                    car.x + car.width > obs.x &&
+                    car.y < obs.y + obs.height &&
+                    car.y + car.height > obs.y
+                ) {
+                    endGame("O‘yinni yutqazdingiz!");
+                }
+            });
+        }
+        
+        function endGame(message) {
+            gameOver = true;
+            gameOverText.textContent = message;
+            gameOverScreen.style.display = "block";
+        }
+        
+        function gameLoop() {
+            if (gameOver) return;
+            if (score >= 50) {
+                endGame("Siz o‘yin g‘olibisiz!");
+                return;
+            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCar(car.x, car.y, car.width, car.height);
+            drawObstacles();
+            updateObstacles();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            obstacles = [];
+            score = 0;
+            scoreDisplay.textContent = score;
+            gameOver = false;
+            gameOverScreen.style.display = "none";
+            for (let i = 0; i < 3; i++) {
+                obstacles.push({ x: Math.random() * (canvas.width - 50), y: -Math.random() * 300, width: 50, height: 80 });
+            }
+            gameLoop();
+        }
+        
+        function restartGame() {
+            document.location.reload();
+        }
+        
+        startGame();
+    </script>
+</body>
+</html>
