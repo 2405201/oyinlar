@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flying Bird Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: skyblue; text-align: center; }
+        canvas { display: block; }
+        #restart-btn {
+            display: none;
+            font-size: 32px;
+            padding: 15px 30px;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+</head>
+<body>
+    <button id="restart-btn" onclick="restartGame()"></button>
+    <script>
+        let bird;
+        let obstacles = [];
+        let gravity = 0.3;
+        let lift = -10;
+        let gameOver = false;
+        let score = 0;
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            bird = new Bird();
+            obstacles.push(new Obstacle());
+        }
+
+        function draw() {
+            background(135, 206, 250);
+            
+            if (!gameOver) {
+                bird.update();
+                bird.show();
+                textSize(32);
+                fill(0);
+                text(`Score: ${score}`, 50, 50);
+                
+                if (frameCount % 90 === 0) {
+                    obstacles.push(new Obstacle());
+                    score++;
+                }
+                
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    obstacles[i].move();
+                    obstacles[i].show();
+                    
+                    if (obstacles[i].hits(bird)) {
+                        endGame();
+                    }
+                    
+                    if (obstacles[i].offscreen()) {
+                        obstacles.splice(i, 1);
+                    }
+                }
+                
+                if (score >= 50) {
+                    winGame();
+                }
+            }
+        }
+
+        function keyPressed() {
+            if (keyCode === ENTER) { // Enter to fly slowly
+                bird.slowFly();
+            }
+        }
+
+        function touchStarted() {
+            bird.slowFly();
+            return false;
+        }
+
+        function endGame() {
+            gameOver = true;
+            fill(0);
+            textSize(48);
+            textAlign(CENTER, CENTER);
+            text("Siz yutqazdingiz!", width / 2, height / 2);
+            let btn = document.getElementById("restart-btn");
+            btn.style.display = "block";
+            btn.innerText = "Siz yutqazdingiz! Yangi o'yinni boshlash";
+        }
+
+        function winGame() {
+            gameOver = true;
+            fill(0, 255, 0);
+            textSize(48);
+            textAlign(CENTER, CENTER);
+            text("Siz yutdingiz!", width / 2, height / 2);
+            let btn = document.getElementById("restart-btn");
+            btn.style.display = "block";
+            btn.innerText = "Siz yutdingiz! O'yinni qayta o'ynang";
+        }
+
+        function restartGame() {
+            location.reload();
+        }
+
+        class Bird {
+            constructor() {
+                this.x = 100;
+                this.y = height / 2;
+                this.size = 40;
+                this.velocity = 0;
+            }
+            update() {
+                this.velocity += gravity;
+                this.y += this.velocity;
+                if (this.y > height - this.size) {
+                    this.y = height - this.size;
+                    this.velocity = 0;
+                }
+                if (this.y < 0) {
+                    this.y = 0;
+                    this.velocity = 0;
+                }
+            }
+            slowFly() {
+                this.velocity += lift * 0.5;
+            }
+            show() {
+                fill(255, 204, 0);
+                ellipse(this.x, this.y, this.size, this.size * 0.8); // Body
+                fill(0);
+                ellipse(this.x + 10, this.y - 10, 5, 5); // Eye
+                fill(255, 153, 51);
+                triangle(this.x + 15, this.y - 5, this.x + 25, this.y, this.x + 15, this.y + 5); // Beak
+                fill(255, 204, 0);
+                triangle(this.x - 10, this.y - 5, this.x - 20, this.y - 15, this.x - 10, this.y - 10); // Wing
+                fill(255, 204, 0);
+                triangle(this.x - 10, this.y + 5, this.x - 20, this.y + 15, this.x - 10, this.y + 10); // Tail
+            }
+        }
+
+        class Obstacle {
+            constructor() {
+                this.top = random(height / 2);
+                this.bottom = random(height / 2);
+                this.x = width;
+                this.w = 50;
+                this.speed = 5;
+            }
+            move() {
+                this.x -= this.speed;
+            }
+            show() {
+                fill(34, 139, 34);
+                rect(this.x, 0, this.w, this.top);
+                rect(this.x, height - this.bottom, this.w, this.bottom);
+            }
+            hits(bird) {
+                if (bird.y < this.top || bird.y > height - this.bottom) {
+                    if (bird.x > this.x && bird.x < this.x + this.w) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            offscreen() {
+                return this.x < -this.w;
+            }
+        }
+    </script>
+</body>
+</html>

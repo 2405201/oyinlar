@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Race Game</title>
     <style>
         body {
             text-align: center;
             background-color: #333;
             color: white;
+            overflow: hidden;
         }
         canvas {
             background: #444;
@@ -31,12 +32,31 @@
             font-size: 16px;
             margin-top: 10px;
         }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .control-button {
+            padding: 15px;
+            font-size: 18px;
+            margin: 0 10px;
+            background-color: white;
+            color: black;
+            border: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>Simple Race o'yini</h1>
+    <h1>Simple Race Game</h1>
     <p>O'tgan mashinalar: <span id="score">0</span></p>
     <canvas id="gameCanvas" width="400" height="600"></canvas>
+    
+    <div class="controls">
+        <button class="control-button" id="leftButton">⬅</button>
+        <button class="control-button" id="rightButton">➡</button>
+    </div>
     
     <div id="gameOverScreen">
         <h2 id="gameOverText"></h2>
@@ -49,6 +69,8 @@
         const scoreDisplay = document.getElementById("score");
         const gameOverScreen = document.getElementById("gameOverScreen");
         const gameOverText = document.getElementById("gameOverText");
+        const leftButton = document.getElementById("leftButton");
+        const rightButton = document.getElementById("rightButton");
         
         let car = { x: 175, y: 500, width: 50, height: 80 };
         let obstacles = [];
@@ -58,7 +80,7 @@
         
         function drawCar(x, y, width, height, color = "red") {
             ctx.fillStyle = color;
-            ctx.fillRect(x + 10, y, width - 20, height); // Tana
+            ctx.fillRect(x + 10, y, width - 20, height);
             ctx.fillStyle = "black";
             ctx.fillRect(x, y + 10, 10, 20);
             ctx.fillRect(x + width - 10, y + 10, 10, 20);
@@ -72,6 +94,14 @@
             } else if (event.key === "ArrowRight" && car.x < canvas.width - car.width) {
                 car.x += 20;
             }
+        });
+        
+        leftButton.addEventListener("click", function() {
+            if (car.x > 0) car.x -= 20;
+        });
+        
+        rightButton.addEventListener("click", function() {
+            if (car.x < canvas.width - car.width) car.x += 20;
         });
         
         function drawObstacles() {
